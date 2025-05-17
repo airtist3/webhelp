@@ -1,14 +1,13 @@
-import { OpenAIStream, StreamingTextResponse } from 'ai-sdk';
 import OpenAI from 'openai';
+import { NextRequest } from 'next/server';
 
-// Create OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
 export const runtime = 'edge';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const { messages } = await req.json();
 
@@ -18,12 +17,11 @@ export async function POST(req: Request) {
 
     const response = await openai.chat.completions.create({
       model: process.env.AI_MODEL || 'gpt-4-turbo',
-      stream: true,
+      stream: false,
       messages,
     });
 
-    const stream = OpenAIStream(response);
-    return new StreamingTextResponse(stream);
+    return Response.json(response);
   } catch (err) {
     console.error('OpenAI error:', err);
     return new Response('Internal Server Error', { status: 500 });
