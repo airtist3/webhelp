@@ -1,4 +1,4 @@
-import { OpenAIStream, StreamingTextResponse } from 'ai';
+import { OpenAIStream, StreamingTextResponse } from 'ai-sdk';
 import OpenAI from 'openai';
 
 // Create OpenAI client
