@@ -17,8 +17,8 @@ export async function POST(req: NextRequest) {
 
     const response = await openai.chat.completions.create({
       model: process.env.AI_MODEL || 'gpt-4-turbo',
-      stream: false,
       messages,
+      stream: false,
     });
 
     return Response.json(response);
