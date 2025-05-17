@@ -2,7 +2,7 @@ import OpenAI from 'openai';
 import { NextRequest } from 'next/server';
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 export const runtime = 'edge';
@@ -17,13 +17,16 @@ export async function POST(req: NextRequest) {
 
     const response = await openai.chat.completions.create({
       model: process.env.AI_MODEL || 'gpt-4-turbo',
-      messages,
       stream: false,
+      messages,
     });
 
     return Response.json(response);
-  } catch (err) {
-    console.error('OpenAI error:', err);
-    return new Response('Internal Server Error', { status: 500 });
+  } catch (err: any) {
+    console.error('OpenAI API Error:', err);
+    return new Response(
+      JSON.stringify({ error: 'Internal Server Error', details: err.message || err.toString() }),
+      { status: 500 }
+    );
   }
 }
