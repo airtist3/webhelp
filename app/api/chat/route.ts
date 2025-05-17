@@ -5,27 +5,61 @@ import {
   smoothStream,
   streamText,
 } from 'ai';
-import { auth, type UserType } from '@/app/(auth)/auth';
-import { type RequestHints, systemPrompt } from '@/lib/ai/prompts';
+
+import {
+  auth,
+  type UserType,
+} from '@/app/(auth)/auth';
+
+import {
+  type RequestHints,
+  systemPrompt,
+} from '@/lib/ai/prompts';
+
 import {
   createStreamId,
   deleteChatById,
   getChatById,
   getMessageCountByUserId,
   getMessagesByChatId,
-  getStreamIdsByChatId,
+  getStreamIdSByChatId,
   saveChat,
   saveMessages,
 } from '@/lib/db/queries';
-import { generateUUID, getTrailingMessageId } from '@/lib/utils';
-import { generateTitleFromUserMessage } from '../../actions';
-import { createDocument } from '@/lib/ai/tools/create-document';
-import { updateDocument } from '@/lib/ai/tools/update-document';
-import { requestSuggestions } from '@/lib/ai/tools/request-suggestions';
-import { getWeather } from '@/lib/ai/tools/get-weather';
-import { isProductionEnvironment } from '@/lib/constants';
-import { myProvider } from '@/lib/ai/providers';
-import { entitlementsByUserType } from '@/lib/ai/entitlements';
+
+import {
+  generateUUID,
+  getTrailingMessageId,
+  generateTitleFromUserMessage,
+} from '@/lib/utils';
+
+import {
+  createDocument,
+} from '@/lib/ai/tools/create-document';
+
+import {
+  updateDocument,
+} from '@/lib/ai/tools/update-document';
+
+import {
+  requestSuggestions,
+} from '@/lib/ai/tools/request-suggestions';
+
+import {
+  weather,
+} from '@/lib/ai/tools/get-weather';
+
+import {
+  isProductionEnvironment,
+} from '@/lib/constants';
+
+import {
+  provider,
+} from '@/lib/ai/providers';
+
+import {
+  getEntitlementsByUserType,
+} from '@/lib/ai/entitlements';
 import { postRequestBodySchema, type PostRequestBody } from './schema';
 import { geolocation } from '@vercel/functions';
 import {
