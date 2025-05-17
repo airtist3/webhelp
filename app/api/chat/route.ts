@@ -15,11 +15,18 @@ export async function POST(req: NextRequest) {
       return new Response('Missing OpenAI API Key', { status: 500 });
     }
 
-    const response = await openai.chat.completions.create({
-      model: process.env.AI_MODEL || 'gpt-4-turbo',
-      stream: false,
-      messages,
-    });
+    const model = process.env.AI_MODEL;
+
+if (!model) {
+  console.error('AI_MODEL not set');
+  return new Response(JSON.stringify({ error: 'AI_MODEL not set' }), { status: 500 });
+}
+
+const response = await openai.chat.completions.create({
+  model,
+  stream: false,
+  messages,
+});
 
     return Response.json(response);
   } catch (err: any) {
