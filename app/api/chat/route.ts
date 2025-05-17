@@ -9,12 +9,12 @@ import {
 import {
   auth,
   type UserType,
-} from '@/app/(auth)/auth';
+} from '../../../../(auth)/auth';
 
 import {
   type RequestHints,
   systemPrompt,
-} from '@/lib/ai/prompts';
+} from '../../../../lib/ai/prompts';
 
 import {
   createStreamId,
@@ -22,10 +22,10 @@ import {
   getChatById,
   getMessageCountByUserId,
   getMessagesByChatId,
-  getStreamIdSByChatId,
+  getStreamIdsByChatId,
   saveChat,
   saveMessages,
-} from '@/lib/db/queries';
+} from '../../../../lib/db/queries';
 
 import {
   generateUUID,
