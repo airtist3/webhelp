@@ -12,10 +12,15 @@ export async function POST(req: Request) {
     });
 
     return Response.json(response.choices[0].message);
-  } catch (error) {
-    console.error('[OPENAI_ERROR]', error);
-    return new Response(JSON.stringify({ message: 'There was a problem with the server.' }), {
-      status: 500,
-    });
-  }
+  } catch (error: any) {
+  console.error('[OPENAI_ERROR]', error);
+
+  return new Response(
+    JSON.stringify({
+      message: error?.message || 'Unknown error',
+      detail: error?.response?.data || error,
+    }),
+    { status: 500 }
+  );
+}
 }
