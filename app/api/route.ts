@@ -1,196 +1,21 @@
-import {
-  appendClientMessage,
-  appendResponseMessages,
-  createDataStream,
-  smoothStream,
-  streamText,
-} from 'ai';
+import { OpenAI } from 'openai';
 
-import { auth, type UserType } from '@/app/(auth)/auth';
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-import {
-  systemPrompt,
-  type RequestHints,
-} from '@/lib/ai/prompts';
-
-import {
-  createStreamId,
-  deleteChatById,
-  getChatById,
-  getMessageCountByUserId,
-  getMessagesByChatId,
-  getStreamIdsByChatId,
-  saveChat,
-  saveMessages,
-} from '@/lib/db/queries';
-
-import {
-  generateUUID,
-  getTrailingMessageId,
-} from '@/lib/utils';
-
-import { createDocument } from '@/lib/ai/tools/create-document';
-import { updateDocument } from '@/lib/ai/tools/update-document';
-import { requestSuggestions } from '@/lib/ai/tools/request-suggestions';
-
-import { isProductionEnvironment } from '@/lib/constants';
-import { myProvider } from '@/lib/ai/providers';
-import { entitlementsByUserType } from '@/lib/ai/entitlements';
-
-import { geolocation } from '@vercel/functions';
-import {
-  createResumableStreamContext,
-  type ResumableStreamContext,
-} from 'resumable-stream';
-
-import { after } from 'next/server';
-import type { Chat } from '@/lib/db/schema';
-import { differenceInSeconds } from 'date-fns';
-import { ChatSDKError } from '@/lib/errors';
-
-export const maxDuration = 60;
-
-let globalStreamContext: ResumableStreamContext | null = null;
-
-function getStreamContext() {
-  if (!globalStreamContext) {
-    try {
-      globalStreamContext = createResumableStreamContext({ waitUntil: after });
-    } catch (error: any) {
-      if (error.message.includes('REDIS_URL')) {
-        console.log(' > Resumable streams are disabled due to missing REDIS_URL');
-      } else {
-        console.error(error);
-      }
-    }
-  }
-  return globalStreamContext;
-}
-
-export async function POST(request: Request) {
-  let requestBody: any;
-
+export async function POST(req: Request) {
   try {
-    const json = await request.json();
-    requestBody = json; // skipping schema validation for now
-  } catch (_) {
-    return new ChatSDKError('bad_request:api').toResponse();
-  }
+    const { messages } = await req.json();
 
-  try {
-    const { id, message, selectedChatModel, selectedVisibilityType } = requestBody;
-    const session = await auth();
-
-    if (!session?.user) return new ChatSDKError('unauthorized:chat').toResponse();
-    const userType: UserType = session.user.type;
-
-    const messageCount = await getMessageCountByUserId({
-      id: session.user.id,
-      differenceInHours: 24,
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4', // or 'gpt-3.5-turbo' if you prefer
+      messages,
     });
 
-    if (messageCount > entitlementsByUserType[userType].maxMessagesPerDay) {
-      return new ChatSDKError('rate_limit:chat').toResponse();
-    }
-
-    const chat = await getChatById({ id });
-    if (!chat) {
-      await saveChat({
-        id,
-        userId: session.user.id,
-        title: 'Untitled Chat',
-        visibility: selectedVisibilityType,
-      });
-    } else {
-      if (chat.userId !== session.user.id) return new ChatSDKError('forbidden:chat').toResponse();
-    }
-
-    const previousMessages = await getMessagesByChatId({ id });
-
-    const messages = appendClientMessage({
-      // @ts-expect-error
-      messages: previousMessages,
-      message,
-    });
-
-    const { longitude, latitude, city, country } = geolocation(request);
-    const requestHints: RequestHints = { longitude, latitude, city, country };
-
-    await saveMessages({
-  messages: [
-    {
-      chatId: id,
-      id: message.id,
-      role: 'user',
-      parts: message.parts,
-      attachments: message.experimental_attachments ?? [],
-      createdAt: new Date(),
-    },
-  ],
-});
-
-    const streamId = generateUUID();
-    await createStreamId({ streamId, chatId: id });
-
-    const stream = createDataStream({
-      execute: (dataStream) => {
-        const result = streamText({
-          model: myProvider.languageModel(selectedChatModel),
-          system: systemPrompt({ selectedChatModel, requestHints }),
-          messages,
-          maxSteps: 5,
-          experimental_transform: smoothStream({ chunking: 'word' }),
-          experimental_generateMessageId: generateUUID,
-          tools: {
-            createDocument: createDocument({ session, dataStream }),
-            updateDocument: updateDocument({ session, dataStream }),
-            requestSuggestions: requestSuggestions({ session, dataStream }),
-          },
-          onFinish: async ({ response }) => {
-            if (session.user?.id) {
-              try {
-                const assistantId = getTrailingMessageId({
-                  messages: response.messages.filter((m) => m.role === 'assistant'),
-                });
-                if (!assistantId) throw new Error('No assistant message found!');
-                const [, assistantMessage] = appendResponseMessages({
-                  messages: [message],
-                  responseMessages: response.messages,
-                });
-                await saveMessages({
-                  messages: [
-                    {
-                      id: assistantId,
-                      chatId: id,
-                      role: assistantMessage.role,
-                      parts: assistantMessage.parts,
-                      attachments: assistantMessage.experimental_attachments ?? [],
-                      createdAt: new Date(),
-                    },
-                  ],
-                });
-              } catch (_) {
-                console.error('Failed to save chat');
-              }
-            }
-          },
-          experimental_telemetry: {
-            isEnabled: isProductionEnvironment,
-            functionId: 'stream-text',
-          },
-        });
-
-        result.consumeStream();
-        result.mergeIntoDataStream(dataStream, { sendReasoning: true });
-      },
-      onError: () => 'Oops, an error occurred!',
-    });
-
-    const streamContext = getStreamContext();
-    return streamContext
-      ? new Response(await streamContext.resumableStream(streamId, () => stream))
-      : new Response(stream);
+    return Response.json(response.choices[0].message);
   } catch (error) {
-    return error instanceof ChatSDKError ? error.toResponse() : new Response('Server Error', { status: 500 });
+    console.error('[OPENAI_ERROR]', error);
+    return new Response(JSON.stringify({ message: 'There was a problem with the server.' }), {
+      status: 500,
+    });
   }
 }
