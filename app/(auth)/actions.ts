@@ -101,7 +101,7 @@ export const register = async (
 
 // Save selected model ID to cookie
 export async function saveChatModelAsCookie(modelId: string) {
-  const cookieStore = cookies(); // ✅ No await needed
+  const cookieStore = await cookies(); // ✅ fix: add await
   cookieStore.set('selectedChatModel', modelId, {
     path: '/',
     maxAge: 60 * 60 * 24 * 365, // 1 year
