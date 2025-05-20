@@ -1,10 +1,20 @@
 'use server';
 
 import { z } from 'zod';
+import { cookies } from 'next/headers';
 
-import { createUser, getUser } from '@/lib/db/queries';
+import {
+  createUser,
+  getUser,
+  updateChatVisibilityById,
+} from '@/lib/db/queries';
 
 import { signIn } from './auth';
+import type { VisibilityType } from '@/components/visibility-selector';
+
+/* -------------------------------------------------------------------------- */
+/*                                Auth Actions                                */
+/* -------------------------------------------------------------------------- */
 
 const authFormSchema = z.object({
   email: z.string().email(),
@@ -64,9 +74,11 @@ export const register = async (
     const [user] = await getUser(validatedData.email);
 
     if (user) {
-      return { status: 'user_exists' } as RegisterActionState;
+      return { status: 'user_exists' };
     }
+
     await createUser(validatedData.email, validatedData.password);
+
     await signIn('credentials', {
       email: validatedData.email,
       password: validatedData.password,
@@ -82,21 +94,21 @@ export const register = async (
     return { status: 'failed' };
   }
 };
-'use server';
 
-import { cookies } from 'next/headers';
-import { updateChatVisiblityById } from '@/lib/db/queries';
-import type { VisibilityType } from '@/components/visibility-selector';
+/* -------------------------------------------------------------------------- */
+/*                            Chat Setting Utilities                          */
+/* -------------------------------------------------------------------------- */
 
-// --- SAVE SELECTED MODEL ID TO COOKIE ---
+// Save selected model ID to cookie
 export async function saveChatModelAsCookie(modelId: string) {
-  (await cookies()).set('selectedChatModel', modelId, {
+  const cookieStore = await cookies();
+  cookieStore.set('selectedChatModel', modelId, {
     path: '/',
     maxAge: 60 * 60 * 24 * 365, // 1 year
   });
 }
 
-// --- UPDATE CHAT VISIBILITY IN DB ---
+// Update chat visibility in the database
 export async function updateChatVisibility({
   chatId,
   visibility,
@@ -104,5 +116,5 @@ export async function updateChatVisibility({
   chatId: string;
   visibility: VisibilityType;
 }) {
-  await updateChatVisiblityById({ chatId, visibility });
+  await updateChatVisibilityById({ chatId, visibility });
 }
