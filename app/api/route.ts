@@ -3,26 +3,37 @@ import { OpenAI } from 'openai';
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function POST(req: Request) {
-  console.log('[DEBUG] POST /api route was triggered');
-
   try {
     const { messages } = await req.json();
-    console.log('[DEBUG] Received messages:', messages);
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: process.env.AI_MODEL || 'gpt-4',
       messages,
     });
 
-    return Response.json(response.choices[0].message);
+    return new Response(JSON.stringify(response.choices[0].message), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
   } catch (error: any) {
-    console.error('[OPENAI_ERROR]', error);
+    console.error('OPENAI ERROR:', error);
+
     return new Response(
       JSON.stringify({
-        message: error?.message || 'Unknown error',
-        detail: error?.response?.data || error,
+        message: 'OpenAI API Error',
+        error: error.message || 'Unknown error',
       }),
-      { status: 500 }
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      },
     );
   }
+}
+
+export async function GET() {
+  return new Response('OpenAI API is running', {
+    status: 200,
+    headers: { 'Content-Type': 'text/plain' },
+  });
 }
