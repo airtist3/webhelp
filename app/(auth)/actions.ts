@@ -6,7 +6,7 @@ import { cookies } from 'next/headers';
 import {
   createUser,
   getUser,
-  updateChatVisibilityById, // ✅ ensure correct spelling
+  updateChatVisiblityById, // ✅ Correct spelling here
 } from '@/lib/db/queries';
 
 import { signIn } from './auth';
@@ -101,7 +101,7 @@ export const register = async (
 
 // Save selected model ID to cookie
 export async function saveChatModelAsCookie(modelId: string) {
-  const cookieStore = cookies(); // ✅ removed `await`
+  const cookieStore = cookies(); // ✅ No await needed
   cookieStore.set('selectedChatModel', modelId, {
     path: '/',
     maxAge: 60 * 60 * 24 * 365, // 1 year
@@ -116,5 +116,5 @@ export async function updateChatVisibility({
   chatId: string;
   visibility: VisibilityType;
 }) {
-  await updateChatVisibilityById({ chatId, visibility });
+  await updateChatVisiblityById({ chatId, visibility }); // ✅ matches export in queries.ts
 }
