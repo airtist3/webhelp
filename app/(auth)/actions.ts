@@ -6,7 +6,7 @@ import { cookies } from 'next/headers';
 import {
   createUser,
   getUser,
-  updateChatVisibilityById,
+  updateChatVisibilityById, // ✅ ensure correct spelling
 } from '@/lib/db/queries';
 
 import { signIn } from './auth';
@@ -101,7 +101,7 @@ export const register = async (
 
 // Save selected model ID to cookie
 export async function saveChatModelAsCookie(modelId: string) {
-  const cookieStore = await cookies();
+  const cookieStore = cookies(); // ✅ removed `await`
   cookieStore.set('selectedChatModel', modelId, {
     path: '/',
     maxAge: 60 * 60 * 24 * 365, // 1 year
