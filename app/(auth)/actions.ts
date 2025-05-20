@@ -82,3 +82,27 @@ export const register = async (
     return { status: 'failed' };
   }
 };
+'use server';
+
+import { cookies } from 'next/headers';
+import { updateChatVisiblityById } from '@/lib/db/queries';
+import type { VisibilityType } from '@/components/visibility-selector';
+
+// --- SAVE SELECTED MODEL ID TO COOKIE ---
+export async function saveChatModelAsCookie(modelId: string) {
+  cookies().set('selectedChatModel', modelId, {
+    path: '/',
+    maxAge: 60 * 60 * 24 * 365, // 1 year
+  });
+}
+
+// --- UPDATE CHAT VISIBILITY IN DB ---
+export async function updateChatVisibility({
+  chatId,
+  visibility,
+}: {
+  chatId: string;
+  visibility: VisibilityType;
+}) {
+  await updateChatVisiblityById({ chatId, visibility });
+}
