@@ -90,7 +90,7 @@ import type { VisibilityType } from '@/components/visibility-selector';
 
 // --- SAVE SELECTED MODEL ID TO COOKIE ---
 export async function saveChatModelAsCookie(modelId: string) {
-  cookies().set('selectedChatModel', modelId, {
+  (await cookies()).set('selectedChatModel', modelId, {
     path: '/',
     maxAge: 60 * 60 * 24 * 365, // 1 year
   });
